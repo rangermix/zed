@@ -202,6 +202,8 @@ pub struct Diagnostic {
     pub is_disk_based: bool,
     /// Whether this diagnostic marks unnecessary code.
     pub is_unnecessary: bool,
+    /// Whether this diagnostic marks deprecated code.
+    pub is_deprecated: bool,
 }
 
 /// TODO - move this into the `project` crate and make it private.
@@ -475,6 +477,7 @@ pub struct BufferChunks<'a> {
     information_depth: usize,
     hint_depth: usize,
     unnecessary_depth: usize,
+    deprecated_depth: usize,
     highlights: Option<BufferChunkHighlights<'a>>,
 }
 
@@ -493,6 +496,8 @@ pub struct Chunk<'a> {
     pub diagnostic_severity: Option<DiagnosticSeverity>,
     /// Whether this chunk of text is marked as unnecessary.
     pub is_unnecessary: bool,
+    /// Whether this chunk of text is marked as deprecated.
+    pub is_deprecated: bool,
     /// Whether this chunk of text was originally a tab character.
     pub is_tab: bool,
 }
@@ -510,6 +515,7 @@ pub(crate) struct DiagnosticEndpoint {
     is_start: bool,
     severity: DiagnosticSeverity,
     is_unnecessary: bool,
+    is_deprecated: bool,
 }
 
 /// A class of characters, used for characterizing a run of text.
@@ -2451,12 +2457,14 @@ impl BufferSnapshot {
                     is_start: true,
                     severity: entry.diagnostic.severity,
                     is_unnecessary: entry.diagnostic.is_unnecessary,
+                    is_deprecated: entry.diagnostic.is_deprecated,
                 });
                 diagnostic_endpoints.push(DiagnosticEndpoint {
                     offset: entry.range.end,
                     is_start: false,
                     severity: entry.diagnostic.severity,
                     is_unnecessary: entry.diagnostic.is_unnecessary,
+                    is_deprecated: entry.diagnostic.is_deprecated,
                 });
             }
             diagnostic_endpoints
@@ -3243,6 +3251,7 @@ impl<'a> BufferChunks<'a> {
             information_depth: 0,
             hint_depth: 0,
             unnecessary_depth: 0,
+            deprecated_depth: 0,
             highlights,
         }
     }
@@ -3297,6 +3306,14 @@ impl<'a> BufferChunks<'a> {
                 self.unnecessary_depth -= 1;
             }
         }
+
+        if endpoint.is_deprecated {
+            if endpoint.is_start {
+                self.deprecated_depth += 1;
+            } else {
+                self.deprecated_depth -= 1;
+            }
+        }
     }
 
     fn current_diagnostic_severity(&self) -> Option<DiagnosticSeverity> {
@@ -3315,6 +3332,10 @@ impl<'a> BufferChunks<'a> {
 
     fn current_code_is_unnecessary(&self) -> bool {
         self.unnecessary_depth > 0
+    }
+
+    fn current_code_is_deprecated(&self) -> bool {
+        self.deprecated_depth > 0
     }
 }
 
@@ -3388,6 +3409,7 @@ impl<'a> Iterator for BufferChunks<'a> {
                 syntax_highlight_id: highlight_id,
                 diagnostic_severity: self.current_diagnostic_severity(),
                 is_unnecessary: self.current_code_is_unnecessary(),
+                is_deprecated: self.current_code_is_deprecated(),
                 ..Default::default()
             })
         } else {
@@ -3426,6 +3448,7 @@ impl Default for Diagnostic {
             is_primary: false,
             is_disk_based: false,
             is_unnecessary: false,
+            is_deprecated: false,
         }
     }
 }

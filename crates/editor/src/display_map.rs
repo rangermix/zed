@@ -28,7 +28,10 @@ use crate::{hover_links::InlayHighlight, movement::TextLayoutDetails, InlayId};
 pub use block_map::{BlockMap, BlockPoint};
 use collections::{BTreeMap, HashMap, HashSet};
 use fold_map::FoldMap;
-use gpui::{Font, HighlightStyle, Hsla, LineLayout, Model, ModelContext, Pixels, UnderlineStyle};
+use gpui::{
+    Font, HighlightStyle, Hsla, LineLayout, Model, ModelContext, Pixels, StrikethroughStyle,
+    UnderlineStyle,
+};
 use inlay_map::InlayMap;
 use language::{
     language_settings::language_settings, OffsetUtf16, Point, Subscription as BufferSubscription,
@@ -38,6 +41,7 @@ use multi_buffer::{Anchor, AnchorRangeExt, MultiBuffer, MultiBufferSnapshot, ToO
 use std::{any::TypeId, borrow::Cow, fmt::Debug, num::NonZeroU32, ops::Range, sync::Arc};
 use sum_tree::{Bias, TreeMap};
 use tab_map::TabMap;
+use ui::px;
 
 use wrap_map::WrapMap;
 
@@ -57,6 +61,15 @@ pub enum FoldStatus {
 }
 
 const UNNECESSARY_CODE_FADE: f32 = 0.3;
+const DEPRECATED_CODE_STRIKETHROUGH: StrikethroughStyle = StrikethroughStyle {
+    color: Some(Hsla {
+        h: 0.,
+        s: 0.,
+        l: 0.,
+        a: 1.,
+    }),
+    thickness: px(1.0),
+};
 
 pub trait ToDisplayPoint {
     fn to_display_point(&self, map: &DisplaySnapshot) -> DisplayPoint;
@@ -560,6 +573,10 @@ impl DisplaySnapshot {
 
             if chunk.is_unnecessary {
                 diagnostic_highlight.fade_out = Some(UNNECESSARY_CODE_FADE);
+            }
+
+            if chunk.is_deprecated {
+                diagnostic_highlight.strikethrough = Some(DEPRECATED_CODE_STRIKETHROUGH);
             }
 
             if let Some(severity) = chunk.diagnostic_severity {

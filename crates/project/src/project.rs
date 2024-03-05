@@ -3933,10 +3933,14 @@ impl Project {
                 tags.iter().any(|tag| *tag == DiagnosticTag::UNNECESSARY)
             });
 
+            let is_deprecated = diagnostic.tags.as_ref().map_or(false, |tags| {
+                tags.iter().any(|tag| *tag == DiagnosticTag::DEPRECATED)
+            });
+
             if is_supporting {
                 supporting_diagnostics.insert(
                     (source, code.clone(), range),
-                    (diagnostic.severity, is_unnecessary),
+                    (diagnostic.severity, is_unnecessary, is_deprecated),
                 );
             } else {
                 let group_id = post_inc(&mut self.next_diagnostic_group_id);
@@ -3958,6 +3962,7 @@ impl Project {
                         is_primary: true,
                         is_disk_based,
                         is_unnecessary,
+                        is_deprecated,
                     },
                 });
                 if let Some(infos) = &diagnostic.related_information {
@@ -3975,6 +3980,7 @@ impl Project {
                                     is_primary: false,
                                     is_disk_based,
                                     is_unnecessary: false,
+                                    is_deprecated: false,
                                 },
                             });
                         }
@@ -3987,15 +3993,14 @@ impl Project {
             let diagnostic = &mut entry.diagnostic;
             if !diagnostic.is_primary {
                 let source = *sources_by_group_id.get(&diagnostic.group_id).unwrap();
-                if let Some(&(severity, is_unnecessary)) = supporting_diagnostics.get(&(
-                    source,
-                    diagnostic.code.clone(),
-                    entry.range.clone(),
-                )) {
+                if let Some(&(severity, is_unnecessary, is_deprecated)) = supporting_diagnostics
+                    .get(&(source, diagnostic.code.clone(), entry.range.clone()))
+                {
                     if let Some(severity) = severity {
                         diagnostic.severity = severity;
                     }
                     diagnostic.is_unnecessary = is_unnecessary;
+                    diagnostic.is_deprecated = is_deprecated;
                 }
             }
         }

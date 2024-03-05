@@ -1544,6 +1544,7 @@ message Diagnostic {
 
     bool is_disk_based = 10;
     bool is_unnecessary = 11;
+    bool is_deprecated = 12;
 
     enum Severity {
         None = 0;

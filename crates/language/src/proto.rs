@@ -227,6 +227,7 @@ pub fn serialize_diagnostics<'a>(
             code: entry.diagnostic.code.clone(),
             is_disk_based: entry.diagnostic.is_disk_based,
             is_unnecessary: entry.diagnostic.is_unnecessary,
+            is_deprecated: entry.diagnostic.is_deprecated,
         })
         .collect()
 }
@@ -412,6 +413,7 @@ pub fn deserialize_diagnostics(
                     is_primary: diagnostic.is_primary,
                     is_disk_based: diagnostic.is_disk_based,
                     is_unnecessary: diagnostic.is_unnecessary,
+                    is_deprecated: diagnostic.is_deprecated,
                 },
             })
         })
